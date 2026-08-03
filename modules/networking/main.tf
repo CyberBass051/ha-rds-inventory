@@ -147,7 +147,7 @@ resource "aws_security_group_rule" "db_ingress_from_proxy" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.proxy.id
-  description              = "Allow ingress from RDS Proxy only — nothing else reaches the DB"
+  description              = "Allow ingress from RDS Proxy only nothing else reaches the DB"
 }
 
 resource "aws_security_group_rule" "lambda_egress_to_vpce" {
