@@ -96,6 +96,20 @@ resource "aws_security_group" "vpc_endpoints" {
   }
 }
 
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  # Intentionally empty — no ingress, no egress.
+  # Forces every resource to use an explicitly-defined SG instead of falling
+  # back to the VPC's default-allow-all group.
+
+  tags = {
+    Name      = "${var.project_name}-default-sg-locked-down"
+    Project   = var.project_name
+    ManagedBy = "terraform"
+  }
+}
+
 resource "aws_security_group_rule" "lambda_egress_to_proxy" {
   type                     = "egress"
   security_group_id        = aws_security_group.lambda.id
@@ -103,6 +117,7 @@ resource "aws_security_group_rule" "lambda_egress_to_proxy" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.proxy.id
+  description              = "Allow write Lambda to reach RDS Proxy"
 }
 
 resource "aws_security_group_rule" "proxy_ingress_from_lambda" {
@@ -112,6 +127,7 @@ resource "aws_security_group_rule" "proxy_ingress_from_lambda" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.lambda.id
+  description              = "Allow Lambda igress to RDS Proxy"
 }
 
 resource "aws_security_group_rule" "proxy_egress_to_db" {
@@ -121,6 +137,7 @@ resource "aws_security_group_rule" "proxy_egress_to_db" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.db.id
+  description              = "Allow RDS Proxy to reach Aurora cluster"
 }
 
 resource "aws_security_group_rule" "db_ingress_from_proxy" {
@@ -130,6 +147,7 @@ resource "aws_security_group_rule" "db_ingress_from_proxy" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.proxy.id
+  description              = "Allow ingress from RDS Proxy only — nothing else reaches the DB"
 }
 
 resource "aws_security_group_rule" "lambda_egress_to_vpce" {
@@ -139,6 +157,7 @@ resource "aws_security_group_rule" "lambda_egress_to_vpce" {
   to_port                  = 443
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.vpc_endpoints.id
+  description              = "Allow Lambda traffic to VPC Endpoints"
 }
 
 resource "aws_security_group_rule" "vpc_ingress_from_lambda" {
@@ -148,6 +167,7 @@ resource "aws_security_group_rule" "vpc_ingress_from_lambda" {
   to_port                  = 443
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.lambda.id
+  description              = "Allow ingress to VPC Endpoints from Lambda"
 }
 
 
