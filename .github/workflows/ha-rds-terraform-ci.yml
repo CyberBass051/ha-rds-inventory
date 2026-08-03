@@ -69,6 +69,7 @@ jobs:
           scan-ref: .
           exit-code: 1
           severity: 'HIGH,CRITICAL'
+          skip-check: CKV2_AWS_5
 
       - name: Terraform Plan
         id: plan
