@@ -201,6 +201,21 @@ resource "aws_vpc_endpoint" "logs" {
     ManagedBy = "terraform"
   }
 }
+
+resource "aws_kms_key" "flow_logs" {
+  description             = "KMS key for VPC flow log encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "${var.project_name}-flow-logs-kms"
+  }
+}
+
+resource "aws_kms_alias" "flow_logs" {
+  name          = "alias/${var.project_name}-flow-logs"
+  target_key_id = aws_kms_key.flow_logs.key_id
+}
  
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/${var.project_name}-flow-logs"

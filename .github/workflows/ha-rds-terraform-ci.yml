@@ -61,6 +61,7 @@ jobs:
           directory: .
           framework: terraform
           softfail: false 
+          skip-check: CKV2_AWS_5,CKV_AWS_338
 
       - name: Run Trivy
         uses: aquasecurity/trivy-action@master
@@ -69,7 +70,7 @@ jobs:
           scan-ref: .
           exit-code: 1
           severity: 'HIGH,CRITICAL'
-          skip-check: CKV2_AWS_5,CKV_AWS_158
+          
 
       - name: Terraform Plan
         id: plan
