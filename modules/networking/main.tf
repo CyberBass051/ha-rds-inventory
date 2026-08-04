@@ -161,7 +161,7 @@ resource "aws_security_group_rule" "lambda_egress_to_vpce" {
 }
 
 resource "aws_security_group_rule" "vpc_ingress_from_lambda" {
-  type                     = "egress"
+  type                     = "ingress"
   security_group_id        = aws_security_group.vpc_endpoints.id
   from_port                = 443
   to_port                  = 443
@@ -185,7 +185,7 @@ resource "aws_vpc_endpoint" "secretsmanager" {
     ManagedBy = "terraform"
   }
 }
- 
+
 
 resource "aws_vpc_endpoint" "logs" {
   vpc_id              = aws_vpc.main.id
@@ -249,7 +249,7 @@ resource "aws_kms_alias" "flow_logs" {
   name          = "alias/${var.project_name}-flow-logs"
   target_key_id = aws_kms_key.flow_logs.key_id
 }
- 
+
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/${var.project_name}-flow-logs"
   retention_in_days = 14
@@ -295,9 +295,9 @@ resource "aws_iam_role_policy" "flow_logs" {
 }
 
 resource "aws_flow_log" "main" {
-  vpc_id                   = aws_vpc.main.id
-  traffic_type              = "ALL"
-  log_destination_type      = "cloud-watch-logs"
-  log_destination           = aws_cloudwatch_log_group.vpc_flow_logs.arn
-  iam_role_arn              = aws_iam_role.flow_logs.arn
+  vpc_id               = aws_vpc.main.id
+  traffic_type         = "ALL"
+  log_destination_type = "cloud-watch-logs"
+  log_destination      = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  iam_role_arn         = aws_iam_role.flow_logs.arn
 }
