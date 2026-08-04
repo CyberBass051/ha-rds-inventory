@@ -61,6 +61,7 @@ resource "aws_rds_cluster" "main" {
   preferred_backup_window         = "03:00-04:00"
   deletion_protection             = false
   skip_final_snapshot             = true
+  enabled_cloudwatch_logs_exports = ["postgresql"]
 
   serverlessv2_scaling_configuration {
     min_capacity = var.min_capacity
@@ -98,5 +99,14 @@ resource "aws_rds_cluster_instance" "reader" {
     Name      = "${var.project_name}-reader-instance"
     Project   = var.project_name
     ManagedBy = "terraform"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "rds_postgresql" {
+  name              = "/aws/rds/cluster/${aws_rds_cluster.main.cluster_identifier}/postgresql"
+  retention_in_days = 14
+
+  tags = {
+    Name = "${var.project_name}-rds-postgresql-logs"
   }
 }
