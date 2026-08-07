@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
   backend "s3" {}
 }
@@ -53,6 +57,7 @@ module "bootstrap" {
   private_subnet_ids     = module.networking.private_subnet_ids
   db_security_group_id   = module.networking.db_sg_id
   cluster_endpoint       = module.database.cluster_endpoint
-  master_user_secret_arn = module.database.master_user_secret_arn
+  master_user_secret     = module.database.master_user_secret_arn
   app_role_name          = "app_user"
-}# CI sanity check Fri Aug  7 12:01:16 AM CEST 2026
+  rds_kms_key_arn        = module.database.rds_kms_key_arn
+}

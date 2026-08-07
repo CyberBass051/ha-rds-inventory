@@ -27,7 +27,7 @@ resource "aws_rds_cluster_parameter_group" "main" {
   }
   parameter {
     name         = "log_min_duration_statement"
-    value        = "1000"  # log queries slower than 1s; tune later if noisy
+    value        = "1000"
     apply_method = "pending-reboot"
   }
 
@@ -54,8 +54,8 @@ resource "aws_kms_key" "rds" {
         Resource  = "*"
       },
       {
-        Sid    = "AllowRDSServiceUse"
-        Effect = "Allow"
+        Sid       = "AllowRDSServiceUse"
+        Effect    = "Allow"
         Principal = { Service = "rds.amazonaws.com" }
         Action = [
           "kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*",
@@ -64,8 +64,8 @@ resource "aws_kms_key" "rds" {
         Resource = "*"
       },
       {
-        Sid    = "AllowCloudWatchLogsEncryption"
-        Effect = "Allow"
+        Sid       = "AllowCloudWatchLogsEncryption"
+        Effect    = "Allow"
         Principal = { Service = "logs.us-east-1.amazonaws.com" }
         Action = [
           "kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*",
@@ -94,24 +94,24 @@ resource "aws_kms_alias" "rds" {
 }
 
 resource "aws_rds_cluster" "main" {
-  cluster_identifier              = "${var.project_name}-cluster"
-  engine                          = "aurora-postgresql"
-  engine_mode                     = "provisioned"
-  engine_version                  = var.engine_version
-  database_name                   = "inventory"
-  master_username                 = var.master_username
-  manage_master_user_password     = true
-  db_subnet_group_name            = aws_db_subnet_group.main.name
-  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.main.name
-  vpc_security_group_ids          = [var.db_security_group_id]
-  storage_encrypted               = true
-  kms_key_id                      = aws_kms_key.rds.arn
-  backup_retention_period         = 7
-  preferred_backup_window         = "03:00-04:00"
-  deletion_protection             = false
-  skip_final_snapshot             = true
-  enabled_cloudwatch_logs_exports = ["postgresql"]
-  copy_tags_to_snapshot           = true
+  cluster_identifier                  = "${var.project_name}-cluster"
+  engine                              = "aurora-postgresql"
+  engine_mode                         = "provisioned"
+  engine_version                      = var.engine_version
+  database_name                       = "inventory"
+  master_username                     = var.master_username
+  manage_master_user_password         = true
+  db_subnet_group_name                = aws_db_subnet_group.main.name
+  db_cluster_parameter_group_name     = aws_rds_cluster_parameter_group.main.name
+  vpc_security_group_ids              = [var.db_security_group_id]
+  storage_encrypted                   = true
+  kms_key_id                          = aws_kms_key.rds.arn
+  backup_retention_period             = 7
+  preferred_backup_window             = "03:00-04:00"
+  deletion_protection                 = false
+  skip_final_snapshot                 = true
+  enabled_cloudwatch_logs_exports     = ["postgresql"]
+  copy_tags_to_snapshot               = true
   iam_database_authentication_enabled = true
 
   serverlessv2_scaling_configuration {

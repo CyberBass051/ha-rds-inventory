@@ -18,3 +18,7 @@ output "master_user_secret_arn" {
 output "cluster_security_group_id" {
   value = var.db_security_group_id
 }
+
+output "rds_kms_key_arn" {
+  value = aws_kms_key.rds.arn
+}
