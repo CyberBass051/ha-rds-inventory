@@ -68,7 +68,7 @@ jobs:
           scan-type: config
           scan-ref: .
           exit-code: 1
-          severity: HIGH,CRITICAL
+          severity: 'HIGH,CRITICAL'
 
       - name: Terraform Plan
         id: plan
