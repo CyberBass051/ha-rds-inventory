@@ -22,3 +22,8 @@ output "cluster_security_group_id" {
 output "rds_kms_key_arn" {
   value = aws_kms_key.rds.arn
 }
+
+output "cluster_resource_id" {
+  description = "Aurora cluster's DbiResourceId, required for IAM database auth ARNs (rds-db:connect)"
+  value       = aws_rds_cluster.main.cluster_resource_id
+}
