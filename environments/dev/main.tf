@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source       = "hashicorp/aws"
+      version      = "~> 5.0"
     }
   }
   backend "s3" {}
@@ -32,4 +32,15 @@ module "database" {
   engine_version       = "15.4"
   min_capacity         = 0.5
   max_capacity         = 4
+}
+
+module "proxy" {
+  source = "../../modules/proxy"
+
+  project_name            = "ha-rds"
+  vpc_id                  = module.networking.vpc_id
+  private_subnet_ids      = module.networking.private_subnet_ids
+  proxy_security_group_id = module.networking.proxy_sg_id
+  db_cluster_resource_id  = module.database.cluster_id
+  master_user_secret_arn  = module.database.master_user_secret_arn
 }
