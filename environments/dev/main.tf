@@ -1,8 +1,12 @@
 terraform {
   required_providers {
     aws = {
-      source       = "hashicorp/aws"
-      version      = "~> 5.0"
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
     }
   }
   backend "s3" {}
@@ -43,4 +47,17 @@ module "proxy" {
   proxy_security_group_id = module.networking.proxy_sg_id
   db_cluster_resource_id  = module.database.cluster_id
   master_user_secret_arn  = module.database.master_user_secret_arn
+}
+
+module "bootstrap" {
+  source = "../../modules/db-bootstrap"
+
+  project_name           = "ha-rds"
+  vpc_id                 = module.networking.vpc_id
+  private_subnet_ids     = module.networking.private_subnet_ids
+  db_security_group_id   = module.networking.db_sg_id
+  cluster_endpoint       = module.database.cluster_endpoint
+  master_user_secret     = module.database.master_user_secret_arn
+  app_role_name          = "app_user"
+  rds_kms_key_arn        = module.database.rds_kms_key_arn
 }
