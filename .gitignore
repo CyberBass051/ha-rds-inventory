@@ -22,3 +22,6 @@ __pycache__/
 # Reports (gitignored per README design)
 logs/
 report.json
+
+# Psycopg2
+psycopg2-layer/
