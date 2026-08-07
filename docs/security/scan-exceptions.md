@@ -9,6 +9,7 @@
 | `CKV_AWS_355`, `CKV_AWS_290` | `aws_iam_role_policy.bootstrap` (db-bootstrap) | `ec2:CreateNetworkInterface`/`Describe`/`Delete` cannot be resource-scoped below `*` — a structural AWS limitation for any VPC-attached Lambda, not a design gap. | Permanent | N/A |
 | `CKV_AWS_116` | `aws_lambda_function.bootstrap` (db-bootstrap) | This Lambda is invoked synchronously via `aws_lambda_invocation` during `terraform apply`, not asynchronously — DLQs only capture failed async invocations, so one doesn't apply to this invocation model. Failures surface directly as an apply-time error instead. | Permanent | Revisit only if this Lambda's invocation pattern changes to async/event-driven. |
 | `CKV_AWS_272` | `aws_lambda_function.bootstrap` (db-bootstrap) | Code signing requires provisioning an AWS Signer signing profile and code-signing config — disproportionate infrastructure for a one-time, apply-time-only bootstrap function with a tightly scoped IAM role and `reserved_concurrent_executions = 1`. | Permanent for this project | Revisit if this pattern is reused for a Lambda handling ongoing production traffic. |
+| `CKV_AWS_309` | `aws_apigatewayv2_route.orders` | Endpoint left unauthenticated (`NONE`) deliberately, to keep the failover load-test script simple (plain HTTP requests, no SigV4 signing). A production version of this API would use AWS_IAM or a JWT authorizer. | Permanent for this project | Revisit if this project's scope extends beyond load-testing into a real authenticated client. |
 
 ## Exceptions considered and rejected
 

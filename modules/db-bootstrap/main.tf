@@ -88,14 +88,14 @@ data "archive_file" "bootstrap_zip" {
 }
 
 resource "aws_lambda_function" "bootstrap" {
-  function_name    = "${var.project_name}-db-bootstrap"
-  role             = aws_iam_role.bootstrap.arn
-  handler          = "handler.lambda_handler"
-  runtime          = "python3.12"
-  timeout          = 30
-  filename         = data.archive_file.bootstrap_zip.output_path
-  source_code_hash = data.archive_file.bootstrap_zip.output_base64sha256
-  kms_key_arn      = var.rds_kms_key_arn
+  function_name                  = "${var.project_name}-db-bootstrap"
+  role                           = aws_iam_role.bootstrap.arn
+  handler                        = "handler.lambda_handler"
+  runtime                        = "python3.12"
+  timeout                        = 30
+  filename                       = data.archive_file.bootstrap_zip.output_path
+  source_code_hash               = data.archive_file.bootstrap_zip.output_base64sha256
+  kms_key_arn                    = var.rds_kms_key_arn
   reserved_concurrent_executions = 1
 
   layers = [data.aws_ssm_parameter.psycopg2_layer_arn.value]
