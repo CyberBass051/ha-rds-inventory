@@ -96,6 +96,20 @@ resource "aws_security_group" "vpc_endpoints" {
   }
 }
 
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  # Intentionally empty — no ingress, no egress.
+  # Forces every resource to use an explicitly-defined SG instead of falling
+  # back to the VPC's default-allow-all group.
+
+  tags = {
+    Name      = "${var.project_name}-default-sg-locked-down"
+    Project   = var.project_name
+    ManagedBy = "terraform"
+  }
+}
+
 resource "aws_security_group_rule" "lambda_egress_to_proxy" {
   type                     = "egress"
   security_group_id        = aws_security_group.lambda.id
@@ -103,6 +117,7 @@ resource "aws_security_group_rule" "lambda_egress_to_proxy" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.proxy.id
+  description              = "Allow write Lambda to reach RDS Proxy"
 }
 
 resource "aws_security_group_rule" "proxy_ingress_from_lambda" {
@@ -112,6 +127,7 @@ resource "aws_security_group_rule" "proxy_ingress_from_lambda" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.lambda.id
+  description              = "Allow Lambda igress to RDS Proxy"
 }
 
 resource "aws_security_group_rule" "proxy_egress_to_db" {
@@ -121,6 +137,7 @@ resource "aws_security_group_rule" "proxy_egress_to_db" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.db.id
+  description              = "Allow RDS Proxy to reach Aurora cluster"
 }
 
 resource "aws_security_group_rule" "db_ingress_from_proxy" {
@@ -130,6 +147,7 @@ resource "aws_security_group_rule" "db_ingress_from_proxy" {
   to_port                  = 5432
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.proxy.id
+  description              = "Allow ingress from RDS Proxy only nothing else reaches the DB"
 }
 
 resource "aws_security_group_rule" "lambda_egress_to_vpce" {
@@ -139,6 +157,7 @@ resource "aws_security_group_rule" "lambda_egress_to_vpce" {
   to_port                  = 443
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.vpc_endpoints.id
+  description              = "Allow Lambda traffic to VPC Endpoints"
 }
 
 resource "aws_security_group_rule" "vpc_ingress_from_lambda" {
@@ -148,6 +167,7 @@ resource "aws_security_group_rule" "vpc_ingress_from_lambda" {
   to_port                  = 443
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.lambda.id
+  description              = "Allow ingress to VPC Endpoints from Lambda"
 }
 
 
@@ -181,4 +201,103 @@ resource "aws_vpc_endpoint" "logs" {
     ManagedBy = "terraform"
   }
 }
+
+resource "aws_kms_key" "flow_logs" {
+  description             = "KMS key for VPC flow log encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableRootAccountAccess"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::221717898536:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogsEncryption"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.us-east-1.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt*",
+          "kms:Decrypt*",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:us-east-1:221717898536:*"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "${var.project_name}-flow-logs-kms"
+  }
+}
+
+resource "aws_kms_alias" "flow_logs" {
+  name          = "alias/${var.project_name}-flow-logs"
+  target_key_id = aws_kms_key.flow_logs.key_id
+}
  
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  name              = "/aws/vpc/${var.project_name}-flow-logs"
+  retention_in_days = 14
+  kms_key_id        = aws_kms_key.flow_logs.arn
+
+  tags = {
+    Name = "${var.project_name}-vpc-flow-logs"
+  }
+}
+
+resource "aws_iam_role" "flow_logs" {
+  name = "${var.project_name}-vpc-flow-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "vpc-flow-logs.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "flow_logs" {
+  name = "${var.project_name}-vpc-flow-logs-policy"
+  role = aws_iam_role.flow_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ]
+      Resource = "${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"
+    }]
+  })
+}
+
+resource "aws_flow_log" "main" {
+  vpc_id                   = aws_vpc.main.id
+  traffic_type              = "ALL"
+  log_destination_type      = "cloud-watch-logs"
+  log_destination           = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  iam_role_arn              = aws_iam_role.flow_logs.arn
+}
