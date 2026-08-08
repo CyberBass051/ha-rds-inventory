@@ -108,14 +108,14 @@ data "archive_file" "bootstrap_zip" {
 }
 
 resource "aws_lambda_function" "bootstrap" {
-  function_name                  = "${var.project_name}-db-bootstrap"
-  role                           = aws_iam_role.bootstrap.arn
-  handler                        = "handler.lambda_handler"
-  runtime                        = "python3.12"
-  timeout                        = 60
-  filename                       = data.archive_file.bootstrap_zip.output_path
-  source_code_hash               = data.archive_file.bootstrap_zip.output_base64sha256
-  kms_key_arn                    = var.rds_kms_key_arn
+  function_name    = "${var.project_name}-db-bootstrap"
+  role             = aws_iam_role.bootstrap.arn
+  handler          = "handler.lambda_handler"
+  runtime          = "python3.12"
+  timeout          = 60
+  filename         = data.archive_file.bootstrap_zip.output_path
+  source_code_hash = data.archive_file.bootstrap_zip.output_base64sha256
+  kms_key_arn      = var.rds_kms_key_arn
 
   layers = [data.aws_ssm_parameter.psycopg2_layer_arn.value]
 
@@ -130,10 +130,11 @@ resource "aws_lambda_function" "bootstrap" {
 
   environment {
     variables = {
-      DB_HOST       = var.cluster_endpoint
-      DB_NAME       = "inventory"
-      MASTER_SECRET = var.master_user_secret
-      APP_ROLE_NAME = var.app_role_name
+      DB_HOST           = var.cluster_endpoint
+      DB_NAME           = "inventory"
+      MASTER_SECRET     = var.master_user_secret
+      APP_ROLE_NAME     = var.app_role_name
+      APP_USER_PASSWORD = var.app_user_password
     }
   }
 
@@ -152,7 +153,8 @@ resource "aws_lambda_invocation" "run_bootstrap" {
   })
 
   triggers = {
-    source_hash = data.archive_file.bootstrap_zip.output_base64sha256
+    source_hash       = data.archive_file.bootstrap_zip.output_base64sha256
+    app_password_hash = sha256(var.app_user_password)
   }
 
   depends_on = [var.rds_writer_instance_id]
@@ -163,7 +165,7 @@ data "archive_file" "schema_zip" {
   type        = "zip"
   source_dir  = "${path.module}/src-schema"
   output_path = "${path.module}/schema.zip"
-} 
+}
 
 resource "aws_lambda_function" "schema_migration" {
   function_name    = "${var.project_name}-schema-migration"
@@ -182,7 +184,7 @@ resource "aws_lambda_function" "schema_migration" {
   }
 
   vpc_config {
-    subnet_ids          = var.private_subnet_ids
+    subnet_ids         = var.private_subnet_ids
     security_group_ids = [aws_security_group.bootstrap.id]
   }
 

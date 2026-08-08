@@ -39,6 +39,12 @@ resource "aws_db_proxy" "main" {
     secret_arn  = var.master_user_secret_arn
   }
 
+  auth {
+    auth_scheme = "SECRETS"
+    iam_auth    = "REQUIRED"
+    secret_arn  = aws_secretsmanager_secret.app_user.arn
+  }
+
   tags = {
     Name      = "${var.project_name}-rds-proxy"
     Project   = var.project_name
@@ -59,7 +65,7 @@ resource "aws_db_proxy_default_target_group" "main" {
 resource "aws_db_proxy_target" "cluster" {
   db_proxy_name         = aws_db_proxy.main.name
   target_group_name     = aws_db_proxy_default_target_group.main.name
-  db_cluster_identifier = var.db_cluster_identifier 
+  db_cluster_identifier = var.db_cluster_identifier
 }
 
 # IAM policy fragment granting connect access via the Proxy's IAM auth —
@@ -77,3 +83,29 @@ data "aws_iam_policy_document" "proxy_connect" {
 data "aws_secretsmanager_secret_version" "master" {
   secret_id = var.master_user_secret_arn
 }
+
+# --- Create a Secret from DB_USER ---
+resource "random_password" "app_user" {
+  length  = 32
+  special = false
+}
+
+resource "aws_secretsmanager_secret" "app_user" {
+  name       = "${var.project_name}/app-user-credentials"
+  kms_key_id = var.rds_kms_key_arn
+
+  tags = {
+    Name      = "${var.project_name}-app-user-secret"
+    Project   = var.project_name
+    ManagedBy = "terraform"
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "app_user" {
+  secret_id = aws_secretsmanager_secret.app_user.id
+  secret_string = jsonencode({
+    username = var.app_role_name
+    password = random_password.app_user.result
+  })
+}
+

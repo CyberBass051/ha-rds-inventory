@@ -37,3 +37,8 @@ variable "rds_writer_instance_id" {
 variable "vpc_endpoints_security_group_id" {
   type = string
 }
+
+variable "app_user_password" {
+  type      = string
+  sensitive = true
+}

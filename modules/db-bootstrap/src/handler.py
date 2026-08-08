@@ -36,6 +36,12 @@ def lambda_handler(event, context):
         # Grant IAM authentication to this role
         cur.execute(f"GRANT rds_iam TO {role_name};")
 
+        # Authenticate User
+        cur.execute(
+            "ALTER ROLE %s WITH PASSWORD %s;",
+            (psycopg2.extensions.AsIs(role_name), os.environ["APP_USER_PASSWORD"])
+        )
+
         # Least-privilege grants — only what the write path in inventory.sql needs
         cur.execute(f"GRANT SELECT, UPDATE ON inventory TO {role_name};")
         cur.execute(f"GRANT SELECT, INSERT ON orders TO {role_name};")
