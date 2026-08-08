@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/archive"
       version = "~> 2.4"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
   backend "s3" {}
 }
@@ -47,21 +51,24 @@ module "proxy" {
   proxy_security_group_id = module.networking.proxy_sg_id
   db_cluster_resource_id  = module.database.cluster_resource_id
   master_user_secret_arn  = module.database.master_user_secret_arn
-  db_cluster_identifier   = module.database.cluster_id           
+  db_cluster_identifier   = module.database.cluster_id
+  rds_kms_key_arn         = module.database.rds_kms_key_arn
+  app_role_name           = "app_user"
 }
 
 module "bootstrap" {
   source = "../../modules/db-bootstrap"
 
-  project_name           = "ha-rds"
-  vpc_id                 = module.networking.vpc_id
-  private_subnet_ids     = module.networking.private_subnet_ids
-  db_security_group_id   = module.networking.db_sg_id
-  cluster_endpoint       = module.database.cluster_endpoint
-  master_user_secret     = module.database.master_user_secret_arn
-  app_role_name          = "app_user"
-  rds_kms_key_arn        = module.database.rds_kms_key_arn
-  rds_writer_instance_id = module.database.writer_instance_id
+  project_name                    = "ha-rds"
+  vpc_id                          = module.networking.vpc_id
+  private_subnet_ids              = module.networking.private_subnet_ids
+  db_security_group_id            = module.networking.db_sg_id
+  cluster_endpoint                = module.database.cluster_endpoint
+  master_user_secret              = module.database.master_user_secret_arn
+  app_role_name                   = "app_user"
+  rds_kms_key_arn                 = module.database.rds_kms_key_arn
+  rds_writer_instance_id          = module.database.writer_instance_id
+  app_user_password               = module.proxy.app_user_password
   vpc_endpoints_security_group_id = module.networking.vpc_endpoints_sg_id
 }
 

@@ -28,3 +28,11 @@ variable "db_cluster_identifier" {
   description = "Aurora cluster's identifier (name), used for RDS Proxy target registration"
   type        = string
 }
+
+variable "rds_kms_key_arn" {
+  type = string
+}
+
+variable "app_role_name" {
+  type = string
+} 
