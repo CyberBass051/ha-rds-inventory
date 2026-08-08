@@ -59,7 +59,7 @@ resource "aws_db_proxy_default_target_group" "main" {
 resource "aws_db_proxy_target" "cluster" {
   db_proxy_name         = aws_db_proxy.main.name
   target_group_name     = aws_db_proxy_default_target_group.main.name
-  db_cluster_identifier = var.db_cluster_resource_id
+  db_cluster_identifier = var.db_cluster_identifier 
 }
 
 # IAM policy fragment granting connect access via the Proxy's IAM auth —

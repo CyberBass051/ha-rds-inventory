@@ -29,3 +29,11 @@ variable "app_role_name" {
 variable "rds_kms_key_arn" {
   type = string
 }
+
+variable "rds_writer_instance_id" {
+  type = string
+}
+
+variable "vpc_endpoints_security_group_id" {
+  type = string
+}

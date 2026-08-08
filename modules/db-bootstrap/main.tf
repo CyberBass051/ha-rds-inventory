@@ -34,6 +34,26 @@ resource "aws_security_group_rule" "db_ingress_from_bootstrap" {
   description              = "Allow one-time bootstrap Lambda to create app_user role"
 }
 
+resource "aws_security_group_rule" "bootstrap_egress_to_vpce" {
+  type                     = "egress"
+  security_group_id        = aws_security_group.bootstrap.id
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = var.vpc_endpoints_security_group_id
+  description              = "Allow bootstrap Lambda to reach Secrets Manager via VPC"
+}
+
+resource "aws_security_group_rule" "vpce_ingress_from_bootstrap" {
+  type                     = "ingress"
+  security_group_id        = var.vpc_endpoints_security_group_id
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.bootstrap.id
+  description              = "Allow ingress from Lambda bootstrap"
+}
+
 # --- IAM Role for the bootstrap Lambda ---
 
 resource "aws_iam_role" "bootstrap" {
@@ -92,11 +112,10 @@ resource "aws_lambda_function" "bootstrap" {
   role                           = aws_iam_role.bootstrap.arn
   handler                        = "handler.lambda_handler"
   runtime                        = "python3.12"
-  timeout                        = 30
+  timeout                        = 60
   filename                       = data.archive_file.bootstrap_zip.output_path
   source_code_hash               = data.archive_file.bootstrap_zip.output_base64sha256
   kms_key_arn                    = var.rds_kms_key_arn
-  reserved_concurrent_executions = 1
 
   layers = [data.aws_ssm_parameter.psycopg2_layer_arn.value]
 
@@ -134,5 +153,64 @@ resource "aws_lambda_invocation" "run_bootstrap" {
 
   triggers = {
     source_hash = data.archive_file.bootstrap_zip.output_base64sha256
+  }
+
+  depends_on = [var.rds_writer_instance_id]
+}
+
+# --- Bootstrap Schema Migration ---
+data "archive_file" "schema_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/src-schema"
+  output_path = "${path.module}/schema.zip"
+} 
+
+resource "aws_lambda_function" "schema_migration" {
+  function_name    = "${var.project_name}-schema-migration"
+  role             = aws_iam_role.bootstrap.arn
+  handler          = "handler.lambda_handler"
+  runtime          = "python3.12"
+  timeout          = 30
+  filename         = data.archive_file.schema_zip.output_path
+  source_code_hash = data.archive_file.schema_zip.output_base64sha256
+  kms_key_arn      = var.rds_kms_key_arn
+
+  layers = [data.aws_ssm_parameter.psycopg2_layer_arn.value]
+
+  tracing_config {
+    mode = "Active"
+  }
+
+  vpc_config {
+    subnet_ids          = var.private_subnet_ids
+    security_group_ids = [aws_security_group.bootstrap.id]
+  }
+
+  environment {
+    variables = {
+      DB_HOST       = var.cluster_endpoint
+      DB_NAME       = "inventory"
+      MASTER_SECRET = var.master_user_secret
+    }
+  }
+
+  tags = {
+    Name      = "${var.project_name}-schema-migration"
+    Project   = var.project_name
+    ManagedBy = "terraform"
+  }
+}
+
+resource "aws_lambda_invocation" "run_schema_migration" {
+  function_name = aws_lambda_function.schema_migration.function_name
+
+  input = jsonencode({
+    action = "migrate"
+  })
+
+  lifecycle_scope = "CREATE_ONLY"
+
+  triggers = {
+    source_hash = data.archive_file.schema_zip.output_base64sha256
   }
 }
