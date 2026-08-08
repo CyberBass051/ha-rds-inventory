@@ -5,7 +5,7 @@ import psycopg2
 
 secrets_client = boto3.client("secretsmanager")
 
-def lamda_handler(context, event):
+def lambda_handler(context, event):
     print(f"Fetching secret from {os.environ["MASTER_SECRET"]}")
     secret = json.loads(
         secrets_client.get_secret_value(SecretId=os.environ["MASTER_SECRET"])["SecretString"]
