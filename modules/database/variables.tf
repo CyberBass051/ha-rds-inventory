@@ -32,3 +32,4 @@ variable "max_capacity" {
   description = "Aurora Serverless v2 max ACU"
   type        = number
 }
+

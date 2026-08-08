@@ -27,3 +27,7 @@ output "cluster_resource_id" {
   description = "Aurora cluster's DbiResourceId, required for IAM database auth ARNs (rds-db:connect)"
   value       = aws_rds_cluster.main.cluster_resource_id
 }
+
+output "writer_instance_id" {
+  value = aws_rds_cluster_instance.writer.id
+}

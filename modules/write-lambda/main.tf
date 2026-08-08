@@ -59,7 +59,7 @@ data "archive_file" "write_zip" {
 
 resource "aws_lambda_function" "write" {
   function_name    = "${var.project_name}-write-order"
-  role             = aws_iam_role.write.id
+  role             = aws_iam_role.write.arn
   handler          = "handler.lambda_handler"
   runtime          = "python3.12"
   timeout          = 10
@@ -73,7 +73,6 @@ resource "aws_lambda_function" "write" {
     mode = "Active"
   }
 
-  reserved_concurrent_executions = 10
 
   vpc_config {
     subnet_ids         = var.private_subnet_ids

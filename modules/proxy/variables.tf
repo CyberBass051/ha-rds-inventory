@@ -23,3 +23,8 @@ variable "master_user_secret_arn" {
   description = "Scrests Manager ARN from the database module (manage_master_user_password)"
   type        = string
 }
+
+variable "db_cluster_identifier" {
+  description = "Aurora cluster's identifier (name), used for RDS Proxy target registration"
+  type        = string
+}
