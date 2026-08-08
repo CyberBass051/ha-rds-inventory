@@ -53,7 +53,7 @@ resource "aws_iam_role_policy" "write_lambda_base" {
 # --- Packaging ---
 data "archive_file" "write_zip" {
   type        = "zip"
-  source_dir  = path.module
+  source_dir  = "${path.module}/src"
   output_path = "${path.module}/write.zip"
 }
 
