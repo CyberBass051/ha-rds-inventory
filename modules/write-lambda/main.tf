@@ -17,11 +17,20 @@ resource "aws_iam_role_policy" "write_db_connect" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["rds-db:connect"]
-      Resource = "arn:aws:rds-db:us-east-1:221717898536:dbuser:${var.db_cluster_resource_id}/${var.app_role_name}"
-    }]
+    Statement = [
+      {
+        Sid      = "ConnectToClusterEndToEnd"
+        Effect   = "Allow"
+        Action   = ["rds-db:connect"]
+        Resource = "arn:aws:rds-db:us-east-1:221717898536:dbuser:${var.db_cluster_resource_id}/${var.app_role_name}"
+      },
+      {
+        Sid      = "ConnectViaProxy"
+        Effect   = "Allow"
+        Action   = ["rds-db:connect"]
+        Resource = "arn:aws:rds-db:us-east-1:221717898536:dbuser:${split(":", var.proxy_arn)[6]}/${var.app_role_name}"
+      }
+    ]
   })
 }
 

@@ -51,6 +51,7 @@ def lambda_handler(event, context):
         conn.close()
     except Exception as e:
         print(f"Connection failed: {type(e).__name__}: {e}")
+        raise
 
     
 

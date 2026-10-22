@@ -83,6 +83,6 @@ module "write_lambda" {
   db_cluster_resource_id   = module.database.cluster_resource_id
   app_role_name            = "app_user"
   rds_kms_key_arn          = module.database.rds_kms_key_arn
+  proxy_arn                = module.proxy.proxy_arn
 }
 
-# trigger1
