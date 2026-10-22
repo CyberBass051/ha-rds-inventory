@@ -39,6 +39,7 @@ Most "deploy RDS to AWS" portfolio repos are the same AWS tutorial with differen
 | [0003](./docs/adr/0003-psycopg2-layer-strategy.md) | Self-built psycopg2 Lambda layer, after two public-layer options were confirmed unavailable for this runtime/region |
 | [0004](./docs/adr/0004-layer-arn-ssm-parameter-store.md) | Layer ARN stored in SSM Parameter Store rather than hardcoded, since it was expensive to obtain |
 | [0005](./docs/adr/0005-rds-proxy-per-user-secrets.md) | RDS Proxy requires a registered Secrets Manager secret per database user, even when that user authenticates via IAM — a non-obvious constraint discovered during integration testing |
+| [0006](./docs/adr/0006-rds-proxy-iam-auth.md) | RDS Proxy end-to-end IAM auth (DefaultAuthScheme=IAM_AUTH) authorizes both hops — client→Proxy and Proxy→database — against the caller's IAM role, not the Proxy's own service role; discovered during a five-stage debugging session |
 
 ## Modules
 
