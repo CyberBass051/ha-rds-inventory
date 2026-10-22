@@ -28,6 +28,18 @@ resource "aws_iam_role_policy" "proxy_secrets_access" {
   })
 }
 
+resource "null_resource" "proxy_default_auth_scheme" {
+  triggers = {
+    proxy_id = aws_db_proxy.main.id
+  }
+
+  provisioner "local-exec" {
+    command = "aws rds modify-db-proxy --db-proxy-name ${aws_db_proxy.main.name} --default-auth-scheme IAM_AUTH --region us-east-1"
+  }
+
+  depends_on = [aws_db_proxy.main]
+}
+
 resource "aws_db_proxy" "main" {
   name                   = "${var.project_name}-proxy"
   engine_family          = "POSTGRESQL"
@@ -35,7 +47,6 @@ resource "aws_db_proxy" "main" {
   vpc_subnet_ids         = var.private_subnet_ids
   vpc_security_group_ids = [var.proxy_security_group_id]
   require_tls            = true
-  default_auth_scheme    = "IAM_AUTH"  
 
   auth {
     auth_scheme = "SECRETS"
