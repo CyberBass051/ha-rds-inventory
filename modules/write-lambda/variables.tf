@@ -29,3 +29,7 @@ variable "app_role_name" {
 variable "rds_kms_key_arn" {
   type = string
 }
+
+variable "proxy_arn" {
+  type = string
+}

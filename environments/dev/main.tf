@@ -12,6 +12,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.6"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
   }
   backend "s3" {}
 }
@@ -83,6 +87,6 @@ module "write_lambda" {
   db_cluster_resource_id   = module.database.cluster_resource_id
   app_role_name            = "app_user"
   rds_kms_key_arn          = module.database.rds_kms_key_arn
+  proxy_arn                = module.proxy.proxy_arn
 }
 
-# trigger1

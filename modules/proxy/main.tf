@@ -20,9 +20,24 @@ resource "aws_iam_role_policy" "proxy_secrets_access" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["secretsmanager:GetSecretValue"]
-      Resource = var.master_user_secret_arn
+      Resource = [
+        var.master_user_secret_arn,
+        aws_secretsmanager_secret.app_user.arn
+      ]
     }]
   })
+}
+
+resource "null_resource" "proxy_default_auth_scheme" {
+  triggers = {
+    proxy_id = aws_db_proxy.main.id
+  }
+
+  provisioner "local-exec" {
+    command = "aws rds modify-db-proxy --db-proxy-name ${aws_db_proxy.main.name} --default-auth-scheme IAM_AUTH --region us-east-1"
+  }
+
+  depends_on = [aws_db_proxy.main]
 }
 
 resource "aws_db_proxy" "main" {
@@ -68,22 +83,6 @@ resource "aws_db_proxy_target" "cluster" {
   db_cluster_identifier = var.db_cluster_identifier
 }
 
-# IAM policy fragment granting connect access via the Proxy's IAM auth —
-# attach this to the write Lambda's execution role in the write-lambda module
-data "aws_iam_policy_document" "proxy_connect" {
-  statement {
-    effect  = "Allow"
-    actions = ["rds-db:connect"]
-    resources = [
-      "arn:aws:rds-db:us-east-1:221717898536:dbuser:${var.db_cluster_resource_id}/${jsondecode(data.aws_secretsmanager_secret_version.master.secret_string)["username"]}"
-    ]
-  }
-}
-
-data "aws_secretsmanager_secret_version" "master" {
-  secret_id = var.master_user_secret_arn
-}
-
 # --- Create a Secret from DB_USER ---
 resource "random_password" "app_user" {
   length  = 32
@@ -92,7 +91,7 @@ resource "random_password" "app_user" {
 
 resource "aws_secretsmanager_secret" "app_user" {
   name       = "${var.project_name}/app-user-credentials"
-  kms_key_id = var.rds_kms_key_arn
+  kms_key_id = var.rds_kms_key_arn  
 
   tags = {
     Name      = "${var.project_name}-app-user-secret"
